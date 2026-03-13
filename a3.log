@@ -1,0 +1,551 @@
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> -- CSCE 55203 HW3 - University Class Scheduling System
+MariaDB [wsultani]> -- Run on turing.csce.uark.edu
+MariaDB [wsultani]> -- Usage: tee a3.log   then paste/source this file   then notee
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> -- TASK 0: Drop existing tables (clean slate)
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> DROP TABLE IF EXISTS SECTION;
+Query OK, 0 rows affected (0.003 sec)
+
+MariaDB [wsultani]> DROP TABLE IF EXISTS PROFESSOR;
+Query OK, 0 rows affected (0.003 sec)
+
+MariaDB [wsultani]> DROP TABLE IF EXISTS COURSE;
+Query OK, 0 rows affected (0.003 sec)
+
+MariaDB [wsultani]> DROP TABLE IF EXISTS ROOM;
+Query OK, 0 rows affected (0.005 sec)
+
+MariaDB [wsultani]> DROP TABLE IF EXISTS DEPT;
+Query OK, 0 rows affected (0.004 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> -- TASK 1: Create Tables
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> 
+MariaDB [wsultani]> CREATE TABLE DEPT (
+    ->     DEPT_CODE   CHAR(4)         NOT NULL,
+    ->     DEPT_NAME   VARCHAR(50)     NOT NULL,
+    ->     ROOM_NUM    INT             NOT NULL,
+    ->     BUILDING    VARCHAR(50)     NOT NULL,
+    ->     PRIMARY KEY (DEPT_CODE)
+    -> );
+Query OK, 0 rows affected (0.005 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> CREATE TABLE PROFESSOR (
+    ->     PROF_ID     INT             NOT NULL,
+    ->     PROF_NAME   VARCHAR(50)     NOT NULL,
+    ->     RANK_TITLE  VARCHAR(30),
+    ->     DEPT_CODE   CHAR(4)         NOT NULL,
+    ->     EMAIL       VARCHAR(50)     NOT NULL,
+    ->     PRIMARY KEY (PROF_ID),
+    ->     FOREIGN KEY (DEPT_CODE) REFERENCES DEPT(DEPT_CODE)
+    ->         ON DELETE CASCADE
+    ->         ON UPDATE CASCADE
+    -> );
+Query OK, 0 rows affected (0.007 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> CREATE TABLE COURSE (
+    ->     DEPT_CODE   CHAR(4)         NOT NULL,
+    ->     COURSE_NUM  VARCHAR(5)      NOT NULL,
+    ->     COURSE_NAME VARCHAR(50)     NOT NULL,
+    ->     CREDIT      INT             NOT NULL CHECK (CREDIT BETWEEN 1 AND 6),
+    ->     PRIMARY KEY (DEPT_CODE, COURSE_NUM),
+    ->     FOREIGN KEY (DEPT_CODE) REFERENCES DEPT(DEPT_CODE)
+    ->         ON DELETE RESTRICT
+    ->         ON UPDATE CASCADE
+    -> );
+Query OK, 0 rows affected (0.005 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> CREATE TABLE ROOM (
+    ->     ROOM_NUM    INT             NOT NULL,
+    ->     BUILDING    VARCHAR(50)     NOT NULL,
+    ->     CAPACITY    INT             CHECK (CAPACITY > 0),
+    ->     ROOM_TYPE   VARCHAR(15),
+    ->     PRIMARY KEY (ROOM_NUM, BUILDING)
+    -> );
+Query OK, 0 rows affected (0.005 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> CREATE TABLE SECTION (
+    ->     SID                 INT             NOT NULL,
+    ->     DEPT_CODE           CHAR(4),
+    ->     COURSE_NUM          VARCHAR(5),
+    ->     PROF_ID             INT,
+    ->     ROOM_NUM            INT,
+    ->     BUILDING            VARCHAR(50),
+    ->     DAYS                VARCHAR(7),
+    ->     START               TIME,
+    ->     END                 TIME,
+    ->     START_DAY           DATE            NOT NULL,
+    ->     END_DAY             DATE            NOT NULL,
+    ->     MAX_ENROLLMENT      INT             CHECK (MAX_ENROLLMENT >= 0),
+    ->     CURRENT_ENROLLMENT  INT             DEFAULT 0,
+    ->     PRIMARY KEY (SID),
+    ->     FOREIGN KEY (DEPT_CODE, COURSE_NUM) REFERENCES COURSE(DEPT_CODE, COURSE_NUM)
+    ->         ON DELETE CASCADE
+    ->         ON UPDATE CASCADE,
+    ->     FOREIGN KEY (PROF_ID) REFERENCES PROFESSOR(PROF_ID)
+    ->         ON DELETE CASCADE
+    ->         ON UPDATE CASCADE,
+    ->     FOREIGN KEY (ROOM_NUM, BUILDING) REFERENCES ROOM(ROOM_NUM, BUILDING)
+    ->         ON DELETE CASCADE
+    ->         ON UPDATE CASCADE
+    -> );
+Query OK, 0 rows affected (0.012 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> -- TASK 2: Describe Tables
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> DESC DEPT;
++-----------+-------------+------+-----+---------+-------+
+| Field     | Type        | Null | Key | Default | Extra |
++-----------+-------------+------+-----+---------+-------+
+| DEPT_CODE | char(4)     | NO   | PRI | NULL    |       |
+| DEPT_NAME | varchar(50) | NO   |     | NULL    |       |
+| ROOM_NUM  | int(11)     | NO   |     | NULL    |       |
+| BUILDING  | varchar(50) | NO   |     | NULL    |       |
++-----------+-------------+------+-----+---------+-------+
+4 rows in set (0.000 sec)
+
+MariaDB [wsultani]> DESC PROFESSOR;
++------------+-------------+------+-----+---------+-------+
+| Field      | Type        | Null | Key | Default | Extra |
++------------+-------------+------+-----+---------+-------+
+| PROF_ID    | int(11)     | NO   | PRI | NULL    |       |
+| PROF_NAME  | varchar(50) | NO   |     | NULL    |       |
+| RANK_TITLE | varchar(30) | YES  |     | NULL    |       |
+| DEPT_CODE  | char(4)     | NO   | MUL | NULL    |       |
+| EMAIL      | varchar(50) | NO   |     | NULL    |       |
++------------+-------------+------+-----+---------+-------+
+5 rows in set (0.000 sec)
+
+MariaDB [wsultani]> DESC COURSE;
++-------------+-------------+------+-----+---------+-------+
+| Field       | Type        | Null | Key | Default | Extra |
++-------------+-------------+------+-----+---------+-------+
+| DEPT_CODE   | char(4)     | NO   | PRI | NULL    |       |
+| COURSE_NUM  | varchar(5)  | NO   | PRI | NULL    |       |
+| COURSE_NAME | varchar(50) | NO   |     | NULL    |       |
+| CREDIT      | int(11)     | NO   |     | NULL    |       |
++-------------+-------------+------+-----+---------+-------+
+4 rows in set (0.000 sec)
+
+MariaDB [wsultani]> DESC ROOM;
++-----------+-------------+------+-----+---------+-------+
+| Field     | Type        | Null | Key | Default | Extra |
++-----------+-------------+------+-----+---------+-------+
+| ROOM_NUM  | int(11)     | NO   | PRI | NULL    |       |
+| BUILDING  | varchar(50) | NO   | PRI | NULL    |       |
+| CAPACITY  | int(11)     | YES  |     | NULL    |       |
+| ROOM_TYPE | varchar(15) | YES  |     | NULL    |       |
++-----------+-------------+------+-----+---------+-------+
+4 rows in set (0.000 sec)
+
+MariaDB [wsultani]> DESC SECTION;
++--------------------+-------------+------+-----+---------+-------+
+| Field              | Type        | Null | Key | Default | Extra |
++--------------------+-------------+------+-----+---------+-------+
+| SID                | int(11)     | NO   | PRI | NULL    |       |
+| DEPT_CODE          | char(4)     | YES  | MUL | NULL    |       |
+| COURSE_NUM         | varchar(5)  | YES  |     | NULL    |       |
+| PROF_ID            | int(11)     | YES  | MUL | NULL    |       |
+| ROOM_NUM           | int(11)     | YES  | MUL | NULL    |       |
+| BUILDING           | varchar(50) | YES  |     | NULL    |       |
+| DAYS               | varchar(7)  | YES  |     | NULL    |       |
+| START              | time        | YES  |     | NULL    |       |
+| END                | time        | YES  |     | NULL    |       |
+| START_DAY          | date        | NO   |     | NULL    |       |
+| END_DAY            | date        | NO   |     | NULL    |       |
+| MAX_ENROLLMENT     | int(11)     | YES  |     | NULL    |       |
+| CURRENT_ENROLLMENT | int(11)     | YES  |     | 0       |       |
++--------------------+-------------+------+-----+---------+-------+
+13 rows in set (0.000 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> -- TASK 3: Insert Records
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- DEPT
+MariaDB [wsultani]> INSERT INTO DEPT VALUES ('CSCE', 'Computer Science & Computer Engineering', 504,  'JBHT');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO DEPT VALUES ('ELEG', 'Electrical Engineering',                  3217, 'BELL');
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [wsultani]> INSERT INTO DEPT VALUES ('MEEG', 'Mechanical Engineering',                  204,  'MEEG');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- PROFESSOR
+MariaDB [wsultani]> INSERT INTO PROFESSOR VALUES (123456, 'Susan Gauch',      'Professor',               'CSCE', 'sgauch@uark.edu');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO PROFESSOR VALUES (123457, 'John Gauch',       'Professor',               'CSCE', 'jgauch@uark.edu');
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [wsultani]> INSERT INTO PROFESSOR VALUES (222222, 'Yanjun Pan',       'Assistant Professor',     'CSCE', 'yanjunp@uark.edu');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO PROFESSOR VALUES (317778, 'Alan Mantooth',    'Distinguished Professor', 'ELEG', 'mantooth@uark.edu');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO PROFESSOR VALUES (310101, 'Brajendra Panda',  'Professor',               'CSCE', 'bpanda@uark.edu');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO PROFESSOR VALUES (444555, 'Alexander Nelson', 'Associate Professor',     'CSCE', 'ahnelson@uark.edu');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO PROFESSOR VALUES (555110, 'Kevin Jin',        'Associate Professor',     'CSCE', 'dongjin@uark.edu');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- COURSE
+MariaDB [wsultani]> INSERT INTO COURSE VALUES ('CSCE', '2004',  'Programming Foundations I',      3);
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO COURSE VALUES ('CSCE', '2114',  'Programming Foundations II',     3);
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [wsultani]> INSERT INTO COURSE VALUES ('CSCE', '3193',  'Programming Paradigms',          3);
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO COURSE VALUES ('CSCE', '3193H', 'Honors Programming Paradigms',   3);
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [wsultani]> INSERT INTO COURSE VALUES ('CSCE', '4553',  'Information Retrieval Lab',      2);
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [wsultani]> INSERT INTO COURSE VALUES ('CSCE', '4263',  'Mobile Programming',             3);
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [wsultani]> INSERT INTO COURSE VALUES ('CSCE', '4623',  'Advanced Data Structures',       3);
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [wsultani]> INSERT INTO COURSE VALUES ('ELEG', '4188',  'Power Electronics',              3);
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [wsultani]> INSERT INTO COURSE VALUES ('CSCE', '4963',  'Capstone II',                    3);
+Query OK, 1 row affected (0.002 sec)
+
+MariaDB [wsultani]> INSERT INTO COURSE VALUES ('CSCE', '5533',  'Advanced Information Retrieval', 3);
+Query OK, 1 row affected (0.002 sec)
+
+MariaDB [wsultani]> INSERT INTO COURSE VALUES ('CSCE', '4988',  'Embedded Systems Lab',           2);
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- ROOM
+MariaDB [wsultani]> INSERT INTO ROOM VALUES (239,  'JBHT', 36,  'Lab');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO ROOM VALUES (236,  'JBHT', 45,  'Lab');
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [wsultani]> INSERT INTO ROOM VALUES (147,  'JBHT', 140, 'Classroom');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO ROOM VALUES (216,  'JBHT', 170, 'Classroom');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO ROOM VALUES (2269, 'BELL', 70,  'Conference');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO ROOM VALUES (2286, 'BELL', 100, 'Classroom');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO ROOM VALUES (225,  'MEEG', 70,  'Classroom');
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- SECTION
+MariaDB [wsultani]> INSERT INTO SECTION VALUES (9597,  'CSCE','2004',  222222, 2269, 'BELL', 'MWF', '15:05','15:55','2023-08-21','2023-12-07', 70,  0);
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO SECTION VALUES (1449,  'CSCE','2114',  123457, 216,  'JBHT', 'MWF', '12:55','13:45','2023-08-21','2023-12-07', 138, 0);
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [wsultani]> INSERT INTO SECTION VALUES (2930,  'CSCE','3193',  222222, 216,  'JBHT', 'TR',  '15:30','16:45','2023-08-21','2023-12-07', 140, 0);
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO SECTION VALUES (4636,  'CSCE','3193H', 222222, 216,  'JBHT', 'TR',  '15:30','16:45','2023-08-21','2023-12-07', 30,  0);
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO SECTION VALUES (12550, 'CSCE','4553',  123456, 239,  'JBHT', 'MWF', '9:40', '10:30','2023-08-21','2023-12-07', 30,  0);
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO SECTION VALUES (11957, 'CSCE','4263',  555110, 239,  'JBHT', 'TR',  '8:00', '9:15', '2023-08-21','2023-12-07', 0,   0);
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO SECTION VALUES (6704,  'CSCE','4623',  444555, 2286, 'BELL', 'MWF', '10:45','11:35','2023-08-21','2023-12-07', 65,  0);
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO SECTION VALUES (6325,  'CSCE','4963',  444555, 147,  'JBHT', 'MWF', '15:05','15:55','2023-08-21','2023-12-07', 50,  0);
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> INSERT INTO SECTION VALUES (11944, 'CSCE','5533',  123456, 239,  'JBHT', 'MWF', '15:05','15:55','2023-08-21','2023-12-07', 30,  0);
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> -- TASK 4: Show filled tables
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> SELECT * FROM DEPT;
++-----------+-----------------------------------------+----------+----------+
+| DEPT_CODE | DEPT_NAME                               | ROOM_NUM | BUILDING |
++-----------+-----------------------------------------+----------+----------+
+| CSCE      | Computer Science & Computer Engineering |      504 | JBHT     |
+| ELEG      | Electrical Engineering                  |     3217 | BELL     |
+| MEEG      | Mechanical Engineering                  |      204 | MEEG     |
++-----------+-----------------------------------------+----------+----------+
+3 rows in set (0.000 sec)
+
+MariaDB [wsultani]> SELECT * FROM PROFESSOR;
++---------+------------------+-------------------------+-----------+-------------------+
+| PROF_ID | PROF_NAME        | RANK_TITLE              | DEPT_CODE | EMAIL             |
++---------+------------------+-------------------------+-----------+-------------------+
+|  123456 | Susan Gauch      | Professor               | CSCE      | sgauch@uark.edu   |
+|  123457 | John Gauch       | Professor               | CSCE      | jgauch@uark.edu   |
+|  222222 | Yanjun Pan       | Assistant Professor     | CSCE      | yanjunp@uark.edu  |
+|  310101 | Brajendra Panda  | Professor               | CSCE      | bpanda@uark.edu   |
+|  317778 | Alan Mantooth    | Distinguished Professor | ELEG      | mantooth@uark.edu |
+|  444555 | Alexander Nelson | Associate Professor     | CSCE      | ahnelson@uark.edu |
+|  555110 | Kevin Jin        | Associate Professor     | CSCE      | dongjin@uark.edu  |
++---------+------------------+-------------------------+-----------+-------------------+
+7 rows in set (0.000 sec)
+
+MariaDB [wsultani]> SELECT * FROM COURSE;
++-----------+------------+--------------------------------+--------+
+| DEPT_CODE | COURSE_NUM | COURSE_NAME                    | CREDIT |
++-----------+------------+--------------------------------+--------+
+| CSCE      | 2004       | Programming Foundations I      |      3 |
+| CSCE      | 2114       | Programming Foundations II     |      3 |
+| CSCE      | 3193       | Programming Paradigms          |      3 |
+| CSCE      | 3193H      | Honors Programming Paradigms   |      3 |
+| CSCE      | 4263       | Mobile Programming             |      3 |
+| CSCE      | 4553       | Information Retrieval Lab      |      2 |
+| CSCE      | 4623       | Advanced Data Structures       |      3 |
+| CSCE      | 4963       | Capstone II                    |      3 |
+| CSCE      | 4988       | Embedded Systems Lab           |      2 |
+| CSCE      | 5533       | Advanced Information Retrieval |      3 |
+| ELEG      | 4188       | Power Electronics              |      3 |
++-----------+------------+--------------------------------+--------+
+11 rows in set (0.000 sec)
+
+MariaDB [wsultani]> SELECT * FROM ROOM;
++----------+----------+----------+------------+
+| ROOM_NUM | BUILDING | CAPACITY | ROOM_TYPE  |
++----------+----------+----------+------------+
+|      147 | JBHT     |      140 | Classroom  |
+|      216 | JBHT     |      170 | Classroom  |
+|      225 | MEEG     |       70 | Classroom  |
+|      236 | JBHT     |       45 | Lab        |
+|      239 | JBHT     |       36 | Lab        |
+|     2269 | BELL     |       70 | Conference |
+|     2286 | BELL     |      100 | Classroom  |
++----------+----------+----------+------------+
+7 rows in set (0.000 sec)
+
+MariaDB [wsultani]> SELECT * FROM SECTION;
++-------+-----------+------------+---------+----------+----------+------+----------+----------+------------+------------+----------------+--------------------+
+| SID   | DEPT_CODE | COURSE_NUM | PROF_ID | ROOM_NUM | BUILDING | DAYS | START    | END      | START_DAY  | END_DAY    | MAX_ENROLLMENT | CURRENT_ENROLLMENT |
++-------+-----------+------------+---------+----------+----------+------+----------+----------+------------+------------+----------------+--------------------+
+|  1449 | CSCE      | 2114       |  123457 |      216 | JBHT     | MWF  | 12:55:00 | 13:45:00 | 2023-08-21 | 2023-12-07 |            138 |                  0 |
+|  2930 | CSCE      | 3193       |  222222 |      216 | JBHT     | TR   | 15:30:00 | 16:45:00 | 2023-08-21 | 2023-12-07 |            140 |                  0 |
+|  4636 | CSCE      | 3193H      |  222222 |      216 | JBHT     | TR   | 15:30:00 | 16:45:00 | 2023-08-21 | 2023-12-07 |             30 |                  0 |
+|  6325 | CSCE      | 4963       |  444555 |      147 | JBHT     | MWF  | 15:05:00 | 15:55:00 | 2023-08-21 | 2023-12-07 |             50 |                  0 |
+|  6704 | CSCE      | 4623       |  444555 |     2286 | BELL     | MWF  | 10:45:00 | 11:35:00 | 2023-08-21 | 2023-12-07 |             65 |                  0 |
+|  9597 | CSCE      | 2004       |  222222 |     2269 | BELL     | MWF  | 15:05:00 | 15:55:00 | 2023-08-21 | 2023-12-07 |             70 |                  0 |
+| 11944 | CSCE      | 5533       |  123456 |      239 | JBHT     | MWF  | 15:05:00 | 15:55:00 | 2023-08-21 | 2023-12-07 |             30 |                  0 |
+| 11957 | CSCE      | 4263       |  555110 |      239 | JBHT     | TR   | 08:00:00 | 09:15:00 | 2023-08-21 | 2023-12-07 |              0 |                  0 |
+| 12550 | CSCE      | 4553       |  123456 |      239 | JBHT     | MWF  | 09:40:00 | 10:30:00 | 2023-08-21 | 2023-12-07 |             30 |                  0 |
++-------+-----------+------------+---------+----------+----------+------+----------+----------+------------+------------+----------------+--------------------+
+9 rows in set (0.000 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> -- TASK 5: Room(s) with the lowest capacity
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> SELECT BUILDING, ROOM_NUM, CAPACITY
+    -> FROM ROOM
+    -> WHERE CAPACITY = (SELECT MIN(CAPACITY) FROM ROOM);
++----------+----------+----------+
+| BUILDING | ROOM_NUM | CAPACITY |
++----------+----------+----------+
+| JBHT     |      239 |       36 |
++----------+----------+----------+
+1 row in set (0.000 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> -- TASK 6a: Open CSCE electives (COURSE_NUM >= 4000, >= 3 credits,
+MariaDB [wsultani]> --          CURRENT_ENROLLMENT < MAX_ENROLLMENT)
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> SELECT s.COURSE_NUM, s.DEPT_CODE,
+    ->        (s.MAX_ENROLLMENT - s.CURRENT_ENROLLMENT) AS SEATS_AVAILABLE
+    -> FROM SECTION s
+    -> JOIN COURSE c ON s.DEPT_CODE = c.DEPT_CODE AND s.COURSE_NUM = c.COURSE_NUM
+    -> WHERE s.DEPT_CODE = 'CSCE'
+    ->   AND s.COURSE_NUM >= '4000'
+    ->   AND c.CREDIT >= 3
+    ->   AND s.CURRENT_ENROLLMENT < s.MAX_ENROLLMENT;
++------------+-----------+-----------------+
+| COURSE_NUM | DEPT_CODE | SEATS_AVAILABLE |
++------------+-----------+-----------------+
+| 4963       | CSCE      |              50 |
+| 4623       | CSCE      |              65 |
+| 5533       | CSCE      |              30 |
++------------+-----------+-----------------+
+3 rows in set (0.000 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> -- TASK 6b: Total MAX_ENROLLMENT per professor
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> SELECT p.PROF_NAME, SUM(s.MAX_ENROLLMENT) AS TOTAL_MAX_ENROLLMENT
+    -> FROM PROFESSOR p
+    -> JOIN SECTION s ON p.PROF_ID = s.PROF_ID
+    -> GROUP BY p.PROF_ID, p.PROF_NAME;
++------------------+----------------------+
+| PROF_NAME        | TOTAL_MAX_ENROLLMENT |
++------------------+----------------------+
+| Susan Gauch      |                   60 |
+| John Gauch       |                  138 |
+| Yanjun Pan       |                  240 |
+| Alexander Nelson |                  115 |
+| Kevin Jin        |                    0 |
++------------------+----------------------+
+5 rows in set (0.000 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> -- TASK 7: Associate Professors and Professors who teach
+MariaDB [wsultani]> --         at least one section AND every section in their
+MariaDB [wsultani]> --         dept's home building
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> SELECT p.PROF_NAME, p.RANK_TITLE AS PROF_RANK, d.DEPT_NAME, d.BUILDING AS DEPT_BUILDING
+    -> FROM PROFESSOR p
+    -> JOIN DEPT d ON p.DEPT_CODE = d.DEPT_CODE
+    -> WHERE p.RANK_TITLE IN ('Professor', 'Associate Professor', 'Distinguished Professor')
+    ->   AND p.PROF_ID IN (SELECT PROF_ID FROM SECTION)
+    ->   AND p.PROF_ID NOT IN (
+    ->         SELECT s.PROF_ID
+    ->         FROM SECTION s
+    ->         JOIN PROFESSOR p2 ON s.PROF_ID = p2.PROF_ID
+    ->         JOIN DEPT d2 ON p2.DEPT_CODE = d2.DEPT_CODE
+    ->         WHERE s.BUILDING <> d2.BUILDING
+    ->       );
++-------------+---------------------+-----------------------------------------+---------------+
+| PROF_NAME   | PROF_RANK           | DEPT_NAME                               | DEPT_BUILDING |
++-------------+---------------------+-----------------------------------------+---------------+
+| Susan Gauch | Professor           | Computer Science & Computer Engineering | JBHT          |
+| John Gauch  | Professor           | Computer Science & Computer Engineering | JBHT          |
+| Kevin Jin   | Associate Professor | Computer Science & Computer Engineering | JBHT          |
++-------------+---------------------+-----------------------------------------+---------------+
+3 rows in set (0.000 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> -- TASK 9: Insert CSCE 4013 Computer Forensics taught by
+MariaDB [wsultani]> --         Brajendra Panda in JBHT 239
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> INSERT IGNORE INTO COURSE VALUES ('CSCE', '4013', 'Computer Forensics', 3);
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> INSERT INTO SECTION (SID, DEPT_CODE, COURSE_NUM, PROF_ID, ROOM_NUM, BUILDING,
+    ->                      DAYS, START, END, START_DAY, END_DAY, MAX_ENROLLMENT, CURRENT_ENROLLMENT)
+    -> VALUES (99999, 'CSCE', '4013', 310101, 239, 'JBHT',
+    ->         NULL, NULL, NULL, '2023-08-21', '2023-12-07', 25, 0);
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- Show all sections taught by Brajendra Panda
+MariaDB [wsultani]> SELECT s.*
+    -> FROM SECTION s
+    -> JOIN PROFESSOR p ON s.PROF_ID = p.PROF_ID
+    -> WHERE p.PROF_NAME = 'Brajendra Panda';
++-------+-----------+------------+---------+----------+----------+------+-------+------+------------+------------+----------------+--------------------+
+| SID   | DEPT_CODE | COURSE_NUM | PROF_ID | ROOM_NUM | BUILDING | DAYS | START | END  | START_DAY  | END_DAY    | MAX_ENROLLMENT | CURRENT_ENROLLMENT |
++-------+-----------+------------+---------+----------+----------+------+-------+------+------------+------------+----------------+--------------------+
+| 99999 | CSCE      | 4013       |  310101 |      239 | JBHT     | NULL | NULL  | NULL | 2023-08-21 | 2023-12-07 |             25 |                  0 |
++-------+-----------+------------+---------+----------+----------+------+-------+------+------------+------------+----------------+--------------------+
+1 row in set (0.000 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> -- TASK 10: Update CSCE 2004 current enrollment to 100
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> UPDATE SECTION
+    -> SET CURRENT_ENROLLMENT = 100
+    -> WHERE DEPT_CODE = 'CSCE' AND COURSE_NUM = '2004';
+Query OK, 1 row affected (0.001 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> SELECT * FROM SECTION WHERE DEPT_CODE = 'CSCE' AND COURSE_NUM = '2004';
++------+-----------+------------+---------+----------+----------+------+----------+----------+------------+------------+----------------+--------------------+
+| SID  | DEPT_CODE | COURSE_NUM | PROF_ID | ROOM_NUM | BUILDING | DAYS | START    | END      | START_DAY  | END_DAY    | MAX_ENROLLMENT | CURRENT_ENROLLMENT |
++------+-----------+------------+---------+----------+----------+------+----------+----------+------------+------------+----------------+--------------------+
+| 9597 | CSCE      | 2004       |  222222 |     2269 | BELL     | MWF  | 15:05:00 | 15:55:00 | 2023-08-21 | 2023-12-07 |             70 |                100 |
++------+-----------+------------+---------+----------+----------+------+----------+----------+------------+------------+----------------+--------------------+
+1 row in set (0.000 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> -- TASK 11: 4000-level CSCE courses BEFORE dropping Nelson
+MariaDB [wsultani]> -- ============================================================
+MariaDB [wsultani]> SELECT s.COURSE_NUM, c.COURSE_NAME, p.PROF_NAME
+    -> FROM SECTION s
+    -> JOIN COURSE c    ON s.DEPT_CODE = c.DEPT_CODE AND s.COURSE_NUM = c.COURSE_NUM
+    -> JOIN PROFESSOR p ON s.PROF_ID = p.PROF_ID
+    -> WHERE s.DEPT_CODE = 'CSCE'
+    ->   AND s.COURSE_NUM LIKE '4%';
++------------+---------------------------+------------------+
+| COURSE_NUM | COURSE_NAME               | PROF_NAME        |
++------------+---------------------------+------------------+
+| 4963       | Capstone II               | Alexander Nelson |
+| 4623       | Advanced Data Structures  | Alexander Nelson |
+| 4263       | Mobile Programming        | Kevin Jin        |
+| 4553       | Information Retrieval Lab | Susan Gauch      |
+| 4013       | Computer Forensics        | Brajendra Panda  |
++------------+---------------------------+------------------+
+5 rows in set (0.000 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- Drop Alexander Nelson (cascades to his SECTION rows)
+MariaDB [wsultani]> DELETE FROM PROFESSOR WHERE PROF_NAME = 'Alexander Nelson';
+Query OK, 1 row affected (0.001 sec)
+
+MariaDB [wsultani]> 
+MariaDB [wsultani]> -- 4000-level CSCE courses AFTER dropping Nelson
+MariaDB [wsultani]> SELECT s.COURSE_NUM, c.COURSE_NAME, p.PROF_NAME
+    -> FROM SECTION s
+    -> JOIN COURSE c    ON s.DEPT_CODE = c.DEPT_CODE AND s.COURSE_NUM = c.COURSE_NUM
+    -> JOIN PROFESSOR p ON s.PROF_ID = p.PROF_ID
+    -> WHERE s.DEPT_CODE = 'CSCE'
+    ->   AND s.COURSE_NUM LIKE '4%';notee  
++------------+---------------------------+-----------------+
+| COURSE_NUM | COURSE_NAME               | PROF_NAME       |
++------------+---------------------------+-----------------+
+| 4013       | Computer Forensics        | Brajendra Panda |
+| 4263       | Mobile Programming        | Kevin Jin       |
+| 4553       | Information Retrieval Lab | Susan Gauch     |
++------------+---------------------------+-----------------+
+3 rows in set (0.001 sec)
+
+    -> exit
+    -> quit
+    -> 
+    -> exit()
+    -> ^C
+MariaDB [wsultani]> exit
