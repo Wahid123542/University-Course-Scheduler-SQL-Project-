@@ -1,6 +1,6 @@
 University-course-scheduler- SQL-Project
 
-This repository contains the SQL script and log file for CSCE 55203 Homework 3, a project assigned by my instructor at the University of Arkansas. The homework implements a University Class Scheduling System using MariaDB/MySQL.
+This repository contains the SQL script and log file for CSCE 55203 project, a project assigned by my instructor at the University of Arkansas. The homework implements a University Class Scheduling System using MariaDB/MySQL.
 
 Project Overview
 
