@@ -1,90 +1,131 @@
-University-course-scheduler- SQL-Project
+# University Class Scheduling System
+### CSCE 55203 – Database Systems | University of Arkansas
 
-This repository contains the SQL script and log file for CSCE 55203 project, a project assigned by my instructor at the University of Arkansas. The homework implements a University Class Scheduling System using MariaDB/MySQL.
+A relational database implementation of a university class scheduling system, built with **MariaDB/MySQL** and tested on the university's `turing.csce.uark.edu` server.
 
-Project Overview
+---
 
-This project models a simplified university course scheduling environment, including:
+## Overview
 
-Departments (DEPT)
+This project models a simplified university course scheduling environment using a normalized relational schema. It demonstrates practical database concepts including entity integrity, referential integrity, cascading deletes, and complex SQL queries.
 
-Professors (PROFESSOR)
+The schema consists of five related tables:
 
-Courses (COURSE)
+| Table | Description |
+|-------|-------------|
+| `DEPT` | Academic departments and their home buildings |
+| `PROFESSOR` | Faculty members and their department affiliations |
+| `COURSE` | Course catalog with credit hours |
+| `ROOM` | Campus rooms with capacity and type |
+| `SECTION` | Course sections linking professors, rooms, and enrollment data |
 
-Rooms (ROOM)
+---
 
-Course Sections (SECTION)
+## Files
 
-The system enforces relationships between tables using primary keys and foreign keys, and supports queries to manage scheduling data.
+| File | Description |
+|------|-------------|
+| `a3.sql` | Full SQL script — creates tables, inserts data, and runs all queries |
+| `a3.log` | Terminal output log showing all commands and their results |
 
-Features
+---
 
-Drop existing tables to start with a clean slate
+## Setup & Usage
 
-Create tables with constraints (PRIMARY KEY, FOREIGN KEY, CHECK)
+**Prerequisites:** Access to a MariaDB/MySQL server.
 
-Insert sample records for departments, professors, courses, rooms, and sections
+**1. Connect and select your database:**
+```sql
+mysql -u your_username -p
+USE your_database_name;
+```
 
-Perform queries to:
+**2. Enable logging (optional):**
+```sql
+tee a3.log;
+```
 
-List tables and describe their structure
-
-Find rooms with the lowest capacity
-
-Identify open CSCE electives
-
-Calculate total enrollment per professor
-
-Find professors teaching only in their home department building
-
-Insert and update specific course sections
-
-Demonstrate cascading and restriction behaviors in the database
-
-Files
-
-a3.sql – SQL script containing all commands to create, populate, and query the database
-
-a3.log – Output log showing commands executed and results
-
-Usage
-
-Start MariaDB/MySQL and select your database:
-
-USE wsultani;
-
-Run the SQL script or paste its commands:
-
+**3. Run the script:**
+```sql
 source a3.sql;
+```
 
-View the output log in a3.log to see the results of all operations.
+**4. Stop logging:**
+```sql
+notee;
+```
 
-Example Queries
+---
 
-Show all sections taught by a specific professor:
+## Schema Design
 
-SELECT s.* 
+Foreign key constraints are defined as follows:
+
+- **RESTRICT** – Deleting a `DEPT` row is blocked if `COURSE` rows reference it
+- **CASCADE** – Deleting a `PROFESSOR` cascades and removes all their `SECTION` rows
+
+This ensures referential integrity while allowing flexible management of professors and sections.
+
+---
+
+## Example Queries
+
+**Find the room with the lowest capacity:**
+```sql
+SELECT BUILDING, ROOM_NUM, CAPACITY
+FROM ROOM
+WHERE CAPACITY = (SELECT MIN(CAPACITY) FROM ROOM);
+```
+
+**Find open CSCE electives (≥4000 level, ≥3 credits, seats available):**
+```sql
+SELECT s.COURSE_NUM, s.DEPT_CODE,
+       (s.MAX_ENROLLMENT - s.CURRENT_ENROLLMENT) AS SEATS_AVAILABLE
+FROM SECTION s
+JOIN COURSE c ON s.DEPT_CODE = c.DEPT_CODE AND s.COURSE_NUM = c.COURSE_NUM
+WHERE s.DEPT_CODE = 'CSCE'
+  AND s.COURSE_NUM >= '4000'
+  AND c.CREDIT >= 3
+  AND s.CURRENT_ENROLLMENT < s.MAX_ENROLLMENT;
+```
+
+**Show total max enrollment per professor:**
+```sql
+SELECT p.PROF_NAME, SUM(s.MAX_ENROLLMENT) AS TOTAL_MAX_ENROLLMENT
+FROM PROFESSOR p
+JOIN SECTION s ON p.PROF_ID = s.PROF_ID
+GROUP BY p.PROF_ID, p.PROF_NAME;
+```
+
+**Show all sections taught by a specific professor:**
+```sql
+SELECT s.*
 FROM SECTION s
 JOIN PROFESSOR p ON s.PROF_ID = p.PROF_ID
 WHERE p.PROF_NAME = 'Brajendra Panda';
+```
 
-Find open CSCE electives:
+**Demonstrate cascade delete — drop a professor and their sections:**
+```sql
+DELETE FROM PROFESSOR WHERE PROF_NAME = 'Alexander Nelson';
+```
 
-SELECT s.COURSE_NUM, s.DEPT_CODE, (s.MAX_ENROLLMENT - s.CURRENT_ENROLLMENT) AS SEATS_AVAILABLE
-FROM SECTION s
-JOIN COURSE c ON s.DEPT_CODE = c.DEPT_CODE AND s.COURSE_NUM = c.COURSE_NUM
-WHERE s.DEPT_CODE = 'CSCE' AND s.COURSE_NUM >= '4000' AND c.CREDIT >= 3 AND s.CURRENT_ENROLLMENT < s.MAX_ENROLLMENT;
+---
 
-Update course enrollment:
+## Concepts Demonstrated
 
-UPDATE SECTION
-SET CURRENT_ENROLLMENT = 100
-WHERE DEPT_CODE = 'CSCE' AND COURSE_NUM = '2004';
-Notes
+- Relational schema design and normalization
+- Primary keys, composite keys, and foreign keys
+- `CHECK` constraints for domain integrity
+- `ON DELETE CASCADE` and `ON DELETE RESTRICT` behaviors
+- Aggregate queries with `GROUP BY`
+- Subqueries and multi-table `JOIN`s
+- `INSERT`, `UPDATE`, and `DELETE` operations
 
-Project assigned by my instructor for CSCE 55203
+---
 
-Designed and tested on MariaDB 10.x at turing.csce.uark.edu
+## Environment
 
-Demonstrates practical use of relational database concepts, including normalization, foreign keys, and data integrity
+- **Database:** MariaDB 10.x
+- **Server:** `turing.csce.uark.edu` (University of Arkansas)
+- **Course:** CSCE 55203 – Database Systems
